@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using Ashkatchap.Shared;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class VerletCloth : MonoBehaviour {
 	[SerializeField] int sizeX = 5;
 	[SerializeField] int sizeY = 5;
-	[SerializeField] float gravity = 1;
+	[SerializeField] Vector3 gravity = new Vector3(0, -1, 0);
 	[SerializeField] float resistance = 2;
 	[SerializeField] Color slackColor;
 	[SerializeField] Color stretchColor;
@@ -18,7 +19,7 @@ public class VerletCloth : MonoBehaviour {
 	}
 
 	void FixedUpdate() {
-		if (points == null) {
+		if (points == null || points.Length == 0) {
 			return;
 		}
 		UpdateSticks();
@@ -29,14 +30,14 @@ public class VerletCloth : MonoBehaviour {
 
 	private void UpdateControlPoints() {
 		foreach (var cp in controlPoints) {
-			cp.point.pos = cp.transform.position;
+			points[cp.pointIndex].pos = cp.transform.position;
 		}
 	}
 
 	void RenderSticks() {
 		foreach (var s in sticks) {
-			Vector3 a = s.p0.pos;
-			Vector3 b = s.p1.pos;
+			Vector3 a = points[s.p0].pos;
+			Vector3 b = points[s.p1].pos;
 			// a += Kp.Rng.InCircle( 0.1f );
 			// b += Kp.Rng.InCircle( 0.1f );
 
@@ -53,10 +54,10 @@ public class VerletCloth : MonoBehaviour {
 	void GenerateCloth() {
 		GeneratePoints();
 		GenerateSticks();
-		controlPoints[0].point = points[0];
-		controlPoints[1].point = points[0 + sizeX * (sizeY - 1)];
-		controlPoints[2].point = points[sizeX - 1 + sizeX * (0)];
-		controlPoints[3].point = points[sizeX - 1 + sizeX * (sizeY - 1)];
+		controlPoints[0].pointIndex = 0;
+		controlPoints[1].pointIndex = 0 + sizeX * (sizeY - 1);
+		controlPoints[2].pointIndex = sizeX - 1 + sizeX * (0);
+		controlPoints[3].pointIndex = sizeX - 1 + sizeX * (sizeY - 1);
 	}
 
 
@@ -78,20 +79,19 @@ public class VerletCloth : MonoBehaviour {
 	void GenerateSticks() {
 		for (int i = 0, y = 0; y < sizeY; y++) {
 			for (int x = 0; x < sizeX; x++, i++) {
-				VerletPoint p0 = points[x + sizeX * y];
 				// for each point, we connect to the one to the right, and the one above
 				if (x < sizeX - 1) {
 					VerletStick rightStick = new VerletStick();
-					rightStick.p0 = p0;
-					rightStick.p1 = points[x + 1 + sizeX * y];
-					rightStick.length = Vector3.Distance(p0.pos, rightStick.p1.pos);
+					rightStick.p0 = x + sizeX * y;
+					rightStick.p1 = x + 1 + sizeX * y;
+					rightStick.length = FastMath.Distance(ref points[rightStick.p0].pos, ref points[rightStick.p1].pos);
 					sticks.Add(rightStick);
 				}
 				if (y < sizeY - 1) {
 					VerletStick upStick = new VerletStick();
-					upStick.p0 = p0;
-					upStick.p1 = points[x + sizeX * (y + 1)];
-					upStick.length = Vector3.Distance(p0.pos, upStick.p1.pos);
+					upStick.p0 = x + sizeX * y;
+					upStick.p1 = x + sizeX * (y + 1);
+					upStick.length = FastMath.Distance(ref points[upStick.p0].pos, ref points[upStick.p1].pos);
 					sticks.Add(upStick);
 				}
 			}
@@ -102,40 +102,36 @@ public class VerletCloth : MonoBehaviour {
 
 	void UpdatePoints() {
 		// we dont care about the grid x/y here so we can just foreach
-		foreach (var p in points) {
-
+		for (int i = 0; i < points.Length; i++) {
 			// other things might have changed the position of the point, 
 			// if this point is  immovable then we can undo this with the previous position
 			// this is why UpdatePoints should happen last
-			if (p.immovable) {
-				p.pos = p.prePos;
+			if (points[i].immovable) {
+				points[i].pos = points[i].prePos;
 				continue;
 			}
 
-			p.vel = p.pos - p.prePos;
+			points[i].vel = (points[i].pos - points[i].prePos) 
+				+ (gravity - points[i].vel * resistance) * Time.fixedDeltaTime;
 
-			p.vel += gravity * Vector3.down * Time.fixedDeltaTime;
-			p.vel += (-p.vel) * resistance * Time.fixedDeltaTime;
-
-			p.prePos = p.pos;
-			p.pos += p.vel;
+			points[i].prePos = points[i].pos;
+			points[i].pos += points[i].vel;
 		}
 
 	}
 	void UpdateSticks() {
 		foreach (var s in sticks) {
-			Vector3 d = s.p1.pos - s.p0.pos;
-			float distance = Vector3.Distance(s.p0.pos, s.p1.pos);
+			Vector3 d = points[s.p1].pos - points[s.p0].pos;
+			float distance = FastMath.Distance(ref points[s.p0].pos, ref points[s.p1].pos);
 			float differenceToTargetLength = s.length - distance;
-			float asdfadsf = differenceToTargetLength / distance / 2;
-			Vector3 offset = d * asdfadsf;
+			Vector3 offset = d * (differenceToTargetLength / distance / 2);
 
-			s.p0.pos -= offset;
-			s.p1.pos += offset;
+			points[s.p0].pos -= offset;
+			points[s.p1].pos += offset;
 		}
 	}
 	void OnDrawGizmos() {
-		if (points == null) return;
+		if (points == null || points.Length == 0) return;
 
 		for (int i = 0, y = 0; y < sizeY; y++, i++) {
 			for (int x = 0; x < sizeX; x++) {
@@ -148,7 +144,7 @@ public class VerletCloth : MonoBehaviour {
 }
 
 [System.Serializable]
-public class VerletPoint {
+public struct VerletPoint {
 	public Vector3 pos;
 	public Vector3 prePos;
 	public Vector3 vel;
@@ -158,11 +154,11 @@ public class VerletPoint {
 		this.pos = pos;
 		prePos = pos;
 		vel = Vector3.zero;
+		immovable = false;
 	}
 }
 [System.Serializable]
 public class VerletStick {
-	public VerletPoint p0;
-	public VerletPoint p1;
+	public int p0, p1;
 	public float length;
 }
