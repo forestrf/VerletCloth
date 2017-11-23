@@ -11,7 +11,7 @@ public class VerletCloth : MonoBehaviour {
 	[SerializeField] Color stretchColor;
 	[SerializeField] float colorSensitivity;
 	[SerializeField] public VerletPoint[] points;
-	[SerializeField] public List<VerletStick> sticks = new List<VerletStick>();
+	[SerializeField] public VerletStick[] sticks;
 	[SerializeField] List<VerletControlPoint> controlPoints;
 
 	void Awake() {
@@ -77,22 +77,22 @@ public class VerletCloth : MonoBehaviour {
 		}
 	}
 	void GenerateSticks() {
+		sticks = new VerletStick[sizeY * sizeX * 2 - (sizeX + sizeX - 1)];
+		int stickCounter = 0;
 		for (int i = 0, y = 0; y < sizeY; y++) {
 			for (int x = 0; x < sizeX; x++, i++) {
 				// for each point, we connect to the one to the right, and the one above
 				if (x < sizeX - 1) {
-					VerletStick rightStick = new VerletStick();
-					rightStick.p0 = x + sizeX * y;
-					rightStick.p1 = x + 1 + sizeX * y;
-					rightStick.length = FastMath.Distance(ref points[rightStick.p0].pos, ref points[rightStick.p1].pos);
-					sticks.Add(rightStick);
+					int p0 = x + sizeX * y;
+					int p1 = x + 1 + sizeX * y;
+					float length = FastMath.Distance(ref points[p0].pos, ref points[p1].pos);
+					sticks[stickCounter++] = new VerletStick(p0, p1, length);
 				}
 				if (y < sizeY - 1) {
-					VerletStick upStick = new VerletStick();
-					upStick.p0 = x + sizeX * y;
-					upStick.p1 = x + sizeX * (y + 1);
-					upStick.length = FastMath.Distance(ref points[upStick.p0].pos, ref points[upStick.p1].pos);
-					sticks.Add(upStick);
+					int p0 = x + sizeX * y;
+					int p1 = x + sizeX * (y + 1);
+					float length = FastMath.Distance(ref points[p0].pos, ref points[p1].pos);
+					sticks[stickCounter++] = new VerletStick(p0, p1, length);
 				}
 			}
 		}
@@ -158,7 +158,12 @@ public struct VerletPoint {
 	}
 }
 [System.Serializable]
-public class VerletStick {
-	public int p0, p1;
-	public float length;
+public struct VerletStick {
+	public readonly int p0, p1;
+	public readonly float length;
+	public VerletStick(int p0, int p1, float length) {
+		this.p0 = p0;
+		this.p1 = p1;
+		this.length = length;
+	}
 }
