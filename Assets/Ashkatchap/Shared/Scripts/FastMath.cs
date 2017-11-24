@@ -3,6 +3,14 @@ using UnityEngine;
 
 namespace Ashkatchap.Shared {
 	public static class FastMath {
+		public static float Dot(ref Vector3 lhs, ref Vector3 rhs) {
+			return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
+		}
+		public static Vector3 Cross(ref Vector3 lhs, ref Vector3 rhs) {
+			return new Vector3(lhs.y * rhs.z - lhs.z * rhs.y, lhs.z * rhs.x - lhs.x * rhs.z, lhs.x * rhs.y - lhs.y * rhs.x);
+		}
+
+
 		/// <summary>
 		/// Replacement for Vector3.Distance.
 		/// </summary>
@@ -47,6 +55,9 @@ namespace Ashkatchap.Shared {
 			normalizedDir = v / magnitude;
 		}
 		
+		/// <summary>
+		/// Don't use with Exponents with 4 bits or more, or it may be slower
+		/// </summary>
 		public static float Pow(float num, uint exp) {
 			float result = 1;
 			while (exp > 0) {
@@ -103,8 +114,8 @@ namespace Ashkatchap.Shared {
 		}
 
 		public static Vector3 GetNormalFromTrianglePoints(ref Vector3 a, ref Vector3 b, ref Vector3 c) {
-			Vector3 v1 = Normalize(a - c);
-			Vector3 v2 = Normalize(b - c);
+			Vector3 v1 = a - c;
+			Vector3 v2 = b - c;
 			return Normalize(new Vector3(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x));
 		}
 		public static Vector3 Normalize(ref Vector3 v) {
@@ -117,18 +128,8 @@ namespace Ashkatchap.Shared {
 		public static float Magnitude(ref Vector3 v) {
 			return (float) Math.Sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 		}
-		public static float Dot(ref Vector3 lhs, ref Vector3 rhs) {
-			return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
-		}
-		public static Vector3 Cross(ref Vector3 lhs, ref Vector3 rhs) {
-			return new Vector3(lhs.y * rhs.z - lhs.z * rhs.y, lhs.z * rhs.x - lhs.x * rhs.z, lhs.x * rhs.y - lhs.y * rhs.x);
-		}
 		public static float Angle(ref Vector3 from, ref Vector3 to) {
 			return (float) Math.Acos(Mathf.Clamp(Vector3.Dot(Normalize(ref from), Normalize(ref to)), -1f, 1f)) * Mathf.Rad2Deg;
-		}
-
-		public static bool Approximately(float a, float b) {
-			return Math.Abs(b - a) < Math.Max(1E-06f * Math.Max(Math.Abs(a), Math.Abs(b)), Mathf.Epsilon * 8f);
 		}
 	}
 }
