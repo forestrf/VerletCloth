@@ -49,10 +49,14 @@ namespace Ashkatchap.Shared {
 		public static float SqrDistance(Vector3 a, Vector3 b) {
 			return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z);
 		}
-
-		public static void Decompose(ref Vector3 v, out Vector3 normalizedDir, out float magnitude) {
-			magnitude = Magnitude(ref v);
+		
+		/// <param name="v">Vector to decompose</param>
+		/// <param name="normalizedDir">Normalized direction of the vector</param>
+		/// <returns>length of vector</returns>
+		public static float Decompose(ref Vector3 v, out Vector3 normalizedDir) {
+			float magnitude = Magnitude(ref v);
 			normalizedDir = v / magnitude;
+			return magnitude;
 		}
 		
 		/// <summary>
