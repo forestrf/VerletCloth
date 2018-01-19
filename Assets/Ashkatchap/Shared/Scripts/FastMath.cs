@@ -132,6 +132,9 @@ namespace Ashkatchap.Shared {
 		public static float Magnitude(ref Vector3 v) {
 			return (float) Math.Sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 		}
+		public static float Magnitude(Vector3 v) {
+			return (float) Math.Sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+		}
 		public static float Angle(ref Vector3 from, ref Vector3 to) {
 			return (float) Math.Acos(Mathf.Clamp(Vector3.Dot(Normalize(ref from), Normalize(ref to)), -1f, 1f)) * Mathf.Rad2Deg;
 		}
