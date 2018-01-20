@@ -11,18 +11,16 @@ sealed public class VerletCloth : MonoBehaviour {
 
 	public int physicIterations = 3;
 	public float spacing = 0.01f;
-	public float tear_distance = 60;
-
-	public static VerletCloth instance;
+	public float tearDistance = 1000;
 
 	public bool springsStructural = true;
 	public bool springsShear = false;
 
+	public int startRow = 0;
+	
 	VerletPoint[] points;
 	UnorderedList<Constraint> constraints = new UnorderedList<Constraint>(32, 32);
 	void Start() {
-		instance = this; // Temporal fix
-
 		int lengthX = sizeX + 1;
 		int lengthY = sizeY + 1;
 		points = new VerletPoint[lengthX * lengthY];
@@ -33,7 +31,6 @@ sealed public class VerletCloth : MonoBehaviour {
 			}
 		}
 		
-		int startRow = 3;
 		for (var i = startRow * lengthX; i < startRow * lengthX + lengthX; i++) {
 			var p = points[i];
 			
@@ -79,7 +76,7 @@ sealed public class VerletCloth : MonoBehaviour {
 		// Resolve constraints
 		for (int i = 0; i < physicIterations; i++) {
 			for (int c = 0; c < constraints.Size; c++) {
-				if (constraints.elements[c].resolve()) {
+				if (constraints.elements[c].resolve(tearDistance)) {
 					constraints.RemoveAt(c);
 					c--; // We do this because of the UnorderedList works (removing equals replacing the element with the latest one in the list)
 				}
@@ -89,8 +86,7 @@ sealed public class VerletCloth : MonoBehaviour {
 		
 		for (int i = 0; i < physicIterations; i++)
 			for (int p = 0; p < points.Length; p++)
-				points[p].resolve_constraints();
-		
+				points[p].resolve_constraints(tearDistance);
 		
 		// Physic properties for the points
 		for (int i = 0; i < points.Length; i++)
@@ -137,9 +133,10 @@ sealed class VerletPoint {
 		velocity = Vector3.zero;
 	}
 
-	public void resolve_constraints() {
+	public void resolve_constraints(float tearDistance) {
 		for (int i = 0; i < constraints.Count; i++)
-			constraints[constraints.Count - 1 - i].resolve();
+			if (constraints[constraints.Count - 1 - i].resolve(tearDistance))
+				constraints.RemoveAt(i--);
 		// Collisions (TO DO)
 	}
 	public void add_force(Vector3 velocity) {
@@ -159,16 +156,14 @@ sealed class Constraint {
 		this.length = length;
 	}
 
-	public bool resolve() {
+	public bool resolve(float tearDistance) {
 		Vector3 offset = p1.pos - p2.pos;
 		float dist = FastMath.Magnitude(ref offset);
 		float diff = (length - dist) / dist;
 
-		/*
-		if (dist > VerletCloth.instance.tear_distance) {
+		if (dist > tearDistance) {
 			return true;
 		}
-		*/
 
 		Vector3 movement = offset * diff;
 
